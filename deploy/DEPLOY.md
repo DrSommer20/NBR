@@ -13,19 +13,52 @@ Alle Befehle laufen auf dem Server, sofern nicht anders angegeben.
 
 ## 0. Vorbedingungen prüfen
 
+**Nicht überspringen.** Fehlt hier etwas, merkst du es sonst erst ganz am Ende.
+
 ```bash
-node --version    # 18 oder neuer
-nginx -v
-git --version
+command -v node nodejs rsync git; node --version; nginx -v
 ```
+
+* **Node 18 oder neuer**, und zwar **systemweit** unter `/usr/bin` oder
+  `/usr/local/bin`. Ein Node aus nvm unter `/home/…` funktioniert **nicht**:
+  die systemd-Unit läuft mit `ProtectHome=true` und kommt an `/home` nicht ran.
+  Fehlt Node ganz:
+
+  ```bash
+  curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs
+  ```
+
+* **rsync** wird für den Kopierschritt und für `update.sh` gebraucht:
+
+  ```bash
+  sudo apt install -y rsync
+  ```
+
+* **nginx-Version notieren.** Ab 1.25.1 gilt `http2 on;` (so ist die
+  mitgelieferte Konfiguration geschrieben). Auf älterem nginx stattdessen die
+  `listen`-Zeilen auf `listen 443 ssl http2;` ändern — sonst startet nginx mit
+  „unknown directive http2" nicht mehr.
 
 DNS muss stehen, sonst scheitert das Zertifikat:
 
 ```bash
-dig +short nbr.vfa-142.de
+getent hosts nbr.vfa-142.de; curl -s ifconfig.me
 ```
 
-Muss die IP deines Servers zeigen. Ports 80 und 443 müssen offen sein.
+Beide müssen dieselbe IP zeigen. `nslookup` und `dig` sind auf schlanken
+Servern oft nicht installiert, `getent` ist immer da.
+
+Löst der Server den eigenen Namen nicht auf, aber öffentliche Resolver schon,
+liegt meist ein gecachtes NXDOMAIN vor:
+
+```bash
+sudo resolvectl flush-caches
+```
+
+Das blockiert certbot übrigens **nicht** — bei `--webroot` fragt Let's Encrypt
+von außen an. Es blockiert nur deine eigenen `curl`-Tests.
+
+Ports 80 und 443 müssen offen sein.
 
 ---
 
@@ -205,12 +238,19 @@ Lege die Sicherungen **nicht** unter `/var/www` ab — dort wären sie abrufbar.
 
 | Symptom | Ursache |
 |---|---|
-| `nginx: [emerg] unknown directive "http2"` | nginx älter als 1.25 — die mitgelieferte `listen … ssl http2;`-Schreibweise nutzen |
+| `nginx: [emerg] unknown directive "http2"` | nginx älter als 1.25 — `http2 on;` löschen, dafür `listen 443 ssl http2;` |
+| `protocol options redefined for [::]:443` | Alte und neue http2-Schreibweise gemischt, oder ein anderer vhost auf demselben Port nutzt die andere Variante |
+| `curl: (6) Could not resolve host` | Nur der **lokale** Resolver kennt den Namen nicht: `sudo resolvectl flush-caches`. Zum Testen ohne DNS: `curl -i -H 'Host: nbr.vfa-142.de' http://127.0.0.1/` |
 | certbot: `Could not reach` | DNS zeigt nicht auf den Server, oder Port 80 ist zu |
+| `403` statt der App | Webroot ist leer — der Kopierschritt aus Abschnitt 4 fehlt oder ist abgebrochen |
+| `status=203/EXEC`, `Unable to locate executable` | Node fehlt oder liegt woanders. Pfad prüfen mit `command -v node` und `ExecStart` in der Unit anpassen. Ein nvm-Node unter `/home` geht wegen `ProtectHome=true` grundsätzlich nicht |
 | `/api/me` liefert 502 | Backend läuft nicht: `journalctl -u gruene-hoelle -n 30` |
 | `/api/me` liefert 404 | `location /api/` fehlt — falsche Konfiguration aktiv |
+| `/api/me` liefert 401 | **Alles richtig.** Heißt nur: nicht angemeldet |
+| `users.json` fehlt | Normal, solange noch niemand ein Konto angelegt hat |
 | Anmelden schlägt still fehl | Seite über `http://` statt `https://` geöffnet; das Session-Cookie hat `Secure` |
 | Konto-Bereich fehlt ganz | Seite per `file://` geöffnet statt über die Domain |
+| Fortschritt vom Testen ist weg | `localStorage` hängt an der Herkunft — `file://`, `127.0.0.1` und die Domain sind drei getrennte Speicher |
 
 ---
 
