@@ -71,48 +71,42 @@ des Browsers — kein Account, kein Server, keine Datenübertragung.
 
 ---
 
+## Konten (optional)
+
+Ohne Konto läuft alles im `localStorage` — kein Server, keine Datenübertragung.
+Mit Konto wandert der Fortschritt zusätzlich auf den eigenen Server: gleicher Stand
+auf PC, Handy und Tablet, dazu eine abschaltbare Bestenliste.
+
+Beim Anmelden werden lokaler und gespeicherter Stand **zusammengeführt**, nicht
+überschrieben: XP und Rekorde als Maximum, pro Kurve gewinnt der Stand mit mehr
+Versuchen, Abzeichen werden vereinigt. Das ist bewusst monoton — zweimal mergen
+ergibt dasselbe wie einmal.
+
+Das Backend steckt in [`server/server.js`](server/server.js): reines Node ohne
+Fremdpakete, also kein `npm install` und keine Supply-Chain. Lokal testen:
+
+```bash
+COOKIE_INSECURE=1 node server/server.js
+```
+
+Dann `http://127.0.0.1:8787` öffnen — der Server liefert dabei auch die App aus.
+
+---
+
 ## Auf den eigenen Server (nginx)
 
-Die App ist komplett statisch — es reicht, den Ordner ins Webroot zu legen.
+Vollständige Anleitung: **[deploy/DEPLOY.md](deploy/DEPLOY.md)**.
 
-**1. Dateien hochladen**
-
-```bash
-rsync -avz --delete index.html css js /var/www/gruene-hoelle/
-```
-
-Von Windows aus per `scp`:
+Kurzfassung — nginx liefert die statischen Dateien, `/api/` geht an den Node-Dienst
+auf `127.0.0.1:8787`:
 
 ```bash
-scp -r index.html css js benutzer@server:/var/www/gruene-hoelle/
+rsync -avz --delete index.html css js benutzer@server:/var/www/nbr/
 ```
 
-**2. Rechte setzen**
-
-```bash
-sudo chown -R www-data:www-data /var/www/gruene-hoelle
-```
-
-**3. nginx-Konfiguration einbinden**
-
-Die fertige Server-Konfiguration liegt in [`deploy/nginx-gruene-hoelle.conf`](deploy/nginx-gruene-hoelle.conf).
-Domain eintragen, dann:
-
-```bash
-sudo cp deploy/nginx-gruene-hoelle.conf /etc/nginx/sites-available/gruene-hoelle
-sudo ln -s /etc/nginx/sites-available/gruene-hoelle /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-```
-
-**4. TLS-Zertifikat**
-
-```bash
-sudo certbot --nginx -d ring.example.com
-```
-
-Die Konfiguration bringt gzip, Cache-Header, HSTS und eine Content-Security-Policy
-bereits mit. `index.html` wird bewusst nicht hart gecacht, damit Besucher nach einem
-Update nicht auf der alten Version festhängen.
+Mitgeliefert sind eine fertige [nginx-Konfiguration](deploy/nginx-nbr.vfa-142.de.conf)
+mit gzip, HSTS, CSP und Cache-Regeln sowie eine abgesicherte
+[systemd-Unit](deploy/gruene-hoelle.service) für das Backend.
 
 ---
 

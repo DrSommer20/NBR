@@ -98,6 +98,11 @@ const App = {
     // Route aus Hash wiederherstellen
     App.routeFromHash(location.hash.replace('#', ''));
 
+    // Konto im Hintergrund prüfen — die App läuft unabhängig davon weiter
+    Account.init().then(() => {
+      if (Account.user) UI.updateHud();
+    });
+
     // Erster Besuch: Begrüßung
     if (Store.data.xp === 0 && Object.keys(Store.data.mastery).length === 0) {
       setTimeout(() => UI.toast('Willkommen in der Grünen Hölle 🏁',
