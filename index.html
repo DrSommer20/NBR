@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Grüne Hölle Academy — Nürburgring Nordschleife lernen: Kurven, Namen, Bremspunkte. Mit Minispielen, Streckenkarte, NLS- und 24h-Zuschauerguide sowie Assetto-Corsa-Training.">
+<meta name="theme-color" content="#0b0e0d">
+<title>Grüne Hölle Academy — Nordschleife lernen</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏁</text></svg>">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div id="toasts"></div>
+
+<div class="app">
+
+  <!-- ======= Sidebar ======= -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 40 40" aria-hidden="true">
+          <path d="M8 32 C4 22 10 6 20 6 C30 6 36 16 32 26 C29 33 20 36 16 30 C13 25 18 18 24 20"
+                fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <b>Grüne Hölle</b>
+        <span>Academy</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item" data-route="cockpit"><span>🏁</span>Cockpit<i>1</i></button>
+      <button class="nav-item" data-route="map"><span>🗺️</span>Streckenkarte<i>2</i></button>
+      <button class="nav-item" data-route="lexikon"><span>📖</span>Kurven-Lexikon<i>3</i></button>
+      <button class="nav-item" data-route="learn"><span>📇</span>Lernkarten<i>4</i></button>
+      <button class="nav-item" data-route="games"><span>🎮</span>Minispiele<i>5</i></button>
+      <button class="nav-item" data-route="guide"><span>🏕️</span>Zuschauer-Guide<i>6</i></button>
+      <button class="nav-item" data-route="ac"><span>🕹️</span>Assetto Corsa<i>7</i></button>
+      <button class="nav-item" data-route="profile"><span>👤</span>Profil<i>8</i></button>
+    </nav>
+
+    <div class="hud" id="hud">
+      <div class="hud-top">
+        <div class="hud-lvl" id="hud-level">1</div>
+        <div class="hud-info">
+          <b id="hud-title">Touristenfahrer</b>
+          <span id="hud-xp">0 XP</span>
+        </div>
+      </div>
+      <div class="hud-bar"><div id="hud-bar"></div></div>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="track-facts">
+        <div><b>20,832</b><span>km Nordschleife</span></div>
+        <div><b>24,358</b><span>km NLS-Runde</span></div>
+        <div><b>~300</b><span>m Höhenunterschied</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ======= Topbar (mobil) ======= -->
+  <header class="topbar">
+    <button class="nav-toggle" id="nav-toggle" aria-label="Menü">☰</button>
+    <div class="topbar-title">Grüne Hölle Academy</div>
+    <div class="topbar-lvl">Lv <b id="hud-level-m">1</b></div>
+  </header>
+
+  <!-- ======= Inhalt ======= -->
+  <main class="content">
+    <div id="view" class="view"></div>
+    <footer class="app-foot">
+      <p><b>Streckenverlauf:</b> © OpenStreetMap-Mitwirkende, Daten unter
+        <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener">ODbL</a>.
+        Kurvenpositionen und Kilometrierung sind aus diesen Daten gemessen.</p>
+      <p><b>Hinweis:</b> Bremspunkte, Gänge, Geschwindigkeiten und Höhenangaben sind Richtwerte für ein
+        GT3-artiges Fahrzeug und verschieben sich je nach Auto, Setup, Reifen und Wetter.</p>
+      <p class="foot-small">Ein inoffizielles Fan- und Lernprojekt. Keine Verbindung zum Nürburgring, zur NLS oder zu
+        Veranstaltern. Auf der Strecke gilt immer das, was Streckenposten und Rennleitung sagen.</p>
+    </footer>
+  </main>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/core.js"></script>
+<script src="js/views.js"></script>
+<script src="js/games.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
