@@ -1,0 +1,12 @@
+# Konten und Fortschritt der Nutzer — enthält Passwort-Hashes.
+# Gehört niemals ins Repository.
+server/data/
+*.tmp
+
+# Betriebssystem / Editor
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+
+node_modules/

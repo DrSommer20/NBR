@@ -1,0 +1,39 @@
+[Unit]
+Description=Grüne Hölle Academy — Konten-Backend
+Documentation=https://nbr.vfa-142.de
+After=network.target
+
+[Service]
+Type=simple
+User=ghacademy
+Group=ghacademy
+WorkingDirectory=/opt/gruene-hoelle
+ExecStart=/usr/bin/node /opt/gruene-hoelle/server/server.js
+Restart=on-failure
+RestartSec=5
+
+Environment=NODE_ENV=production
+Environment=PORT=8787
+Environment=HOST=127.0.0.1
+Environment=DATA_FILE=/var/lib/gruene-hoelle/users.json
+# nginx liefert die statischen Dateien aus — das Backend soll das nicht tun
+Environment=STATIC_DIR=
+
+# --- Absicherung ---
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# Einzig beschreibbarer Pfad: die Datenbank
+ReadWritePaths=/var/lib/gruene-hoelle
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

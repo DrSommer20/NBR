@@ -919,6 +919,160 @@ Views.ac = function (root) {
 };
 
 /* ============================================================
+   KONTO-BEREICH (im Profil)
+   ============================================================ */
+function renderAccountPanel(box) {
+  if (!box) return;
+
+  /* Ohne Server (z. B. direkt per Doppelklick geöffnet) gibt es keine Konten —
+     die App funktioniert dann trotzdem vollständig, nur eben lokal. */
+  if (!Account.available) {
+    box.innerHTML = `
+      <h2 class="panel-h">Konto</h2>
+      <p class="muted small" style="max-width:60ch">
+        Konten brauchen die gehostete Version. Du hast die App gerade direkt von der Festplatte
+        geöffnet — dein Fortschritt wird ausschließlich in diesem Browser gespeichert.
+      </p>`;
+    return;
+  }
+
+  if (Account.user) {
+    const u = Account.user;
+    const sync = { idle:['','bereit'], busy:['busy','wird gesichert …'],
+                   ok:['ok','gesichert'], err:['err','Server nicht erreichbar'] }[Account.syncState];
+    box.innerHTML = `
+      <h2 class="panel-h">Konto</h2>
+      <div class="acc-status">
+        <div class="acc-avatar">${escapeHtml(u.name.slice(0, 2).toUpperCase())}</div>
+        <div class="acc-who">
+          <b>${escapeHtml(u.name)}</b>
+          <span><i class="sync-dot ${sync[0]}"></i>${sync[1]}</span>
+        </div>
+        <div class="acc-actions">
+          <label class="switch"><input type="checkbox" id="acc-board" ${u.onBoard ? 'checked' : ''}><span></span>In Bestenliste zeigen</label>
+          <button class="btn btn-sm" id="acc-sync">Jetzt sichern</button>
+          <button class="btn btn-sm btn-ghost" id="acc-logout">Abmelden</button>
+        </div>
+      </div>
+      <div id="board-wrap" style="margin-top:26px"></div>`;
+
+    $('#acc-logout', box).addEventListener('click', async () => {
+      await Account.logout();
+      UI.toast('Abgemeldet', 'Dein Fortschritt bleibt lokal erhalten.');
+    });
+    $('#acc-sync', box).addEventListener('click', () => Account.push());
+    $('#acc-board', box).addEventListener('change', async e => {
+      try { await Account.setBoardVisibility(e.target.checked); }
+      catch (err) { UI.toast('Fehlgeschlagen', err.message); }
+    });
+
+    renderBoard($('#board-wrap', box));
+    return;
+  }
+
+  /* Nicht angemeldet: Registrieren / Anmelden */
+  box.innerHTML = `
+    <h2 class="panel-h">Konto — optional</h2>
+    <div class="acc-box">
+      <div class="acc-intro">
+        <p>Die App läuft komplett ohne Konto. Ein Konto lohnt sich, wenn du auf mehreren Geräten
+           lernst oder dich mit anderen vergleichen willst.</p>
+        <ul class="acc-benefits">
+          <li>Fortschritt auf PC, Handy und Tablet — derselbe Stand</li>
+          <li>Kein Datenverlust, wenn du den Browser-Cache leerst</li>
+          <li>Bestenliste gegen alle, die mitmachen (abschaltbar)</li>
+          <li>Beim Anmelden werden lokaler und gespeicherter Stand zusammengeführt — es geht nichts verloren</li>
+        </ul>
+      </div>
+      <div class="acc-form">
+        <div class="acc-tabs">
+          <button class="acc-tab is-on" data-m="login">Anmelden</button>
+          <button class="acc-tab" data-m="register">Konto anlegen</button>
+        </div>
+        <div class="acc-field">
+          <label for="acc-name">Name</label>
+          <input id="acc-name" type="text" autocomplete="username" maxlength="24" placeholder="Fahrername">
+        </div>
+        <div class="acc-field">
+          <label for="acc-pw">Passwort</label>
+          <input id="acc-pw" type="password" autocomplete="current-password" maxlength="200" placeholder="••••••••">
+          <p class="acc-hint" id="acc-pwhint"></p>
+        </div>
+        <div class="acc-msg" id="acc-msg"></div>
+        <button class="btn btn-primary" id="acc-go">Anmelden</button>
+        <p class="acc-hint">Der Name ist öffentlich sichtbar, sobald du in der Bestenliste stehst.
+           Nimm nicht deinen Klarnamen, wenn dir das lieber ist.</p>
+      </div>
+    </div>`;
+
+  let mode = 'login';
+  const msg = $('#acc-msg', box);
+  const show = (text, kind) => { msg.textContent = text; msg.className = 'acc-msg show ' + kind; };
+
+  $$('.acc-tab', box).forEach(t => t.addEventListener('click', () => {
+    $$('.acc-tab', box).forEach(x => x.classList.remove('is-on'));
+    t.classList.add('is-on');
+    mode = t.dataset.m;
+    $('#acc-go', box).textContent = mode === 'login' ? 'Anmelden' : 'Konto anlegen';
+    $('#acc-pw', box).autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+    $('#acc-pwhint', box).textContent = mode === 'login' ? '' : 'Mindestens 8 Zeichen.';
+    msg.className = 'acc-msg';
+  }));
+
+  const submit = async () => {
+    const name = $('#acc-name', box).value.trim();
+    const pw = $('#acc-pw', box).value;
+    if (!name || !pw) { show('Bitte Name und Passwort ausfüllen.', 'err'); return; }
+    const btn = $('#acc-go', box);
+    btn.disabled = true;
+    btn.textContent = 'Moment …';
+    try {
+      if (mode === 'login') await Account.login(name, pw);
+      else await Account.register(name, pw);
+      UI.toast('Angemeldet', 'Dein Fortschritt wird ab jetzt synchronisiert.');
+      App.go('profile');
+    } catch (e) {
+      show(e.message, 'err');
+      btn.disabled = false;
+      btn.textContent = mode === 'login' ? 'Anmelden' : 'Konto anlegen';
+    }
+  };
+
+  $('#acc-go', box).addEventListener('click', submit);
+  $$('#acc-name, #acc-pw', box).forEach(i =>
+    i.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); }));
+}
+
+async function renderBoard(wrap) {
+  if (!wrap) return;
+  wrap.innerHTML = `<h2 class="panel-h">Bestenliste</h2><p class="muted small">wird geladen …</p>`;
+  try {
+    const board = await Account.leaderboard();
+    if (!board.length) {
+      wrap.innerHTML = `<h2 class="panel-h">Bestenliste</h2>
+        <p class="muted small">Noch niemand mit Fortschritt dabei. Sei der Erste.</p>`;
+      return;
+    }
+    wrap.innerHTML = `
+      <h2 class="panel-h">Bestenliste</h2>
+      <div class="board">
+        <div class="board-row head"><span>Pos</span><span>Fahrer</span><span>XP</span><span>Level</span><span>Kurven</span></div>
+        ${board.map((r, i) => `
+          <div class="board-row${r.me ? ' me' : ''}">
+            <span class="br-pos">${String(i + 1).padStart(2, '0')}</span>
+            <span class="br-name">${escapeHtml(r.name)}</span>
+            <span class="br-num hl">${r.xp.toLocaleString('de-DE')}</span>
+            <span class="br-num">${r.level}</span>
+            <span class="br-num">${r.mastered}/${ND.corners.length}</span>
+          </div>`).join('')}
+      </div>`;
+  } catch (e) {
+    wrap.innerHTML = `<h2 class="panel-h">Bestenliste</h2>
+      <p class="muted small">Konnte nicht geladen werden: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+/* ============================================================
    PROFIL
    ============================================================ */
 Views.profile = function (root) {
@@ -1015,6 +1169,12 @@ Views.profile = function (root) {
       <span class="mt-tries">${st.c}✓ ${st.w}✗</span>
     </div>`;
   }).join('');
+
+  renderAccountPanel($('#account-panel', root));
+  Account.onChange(() => {
+    const box = $('#account-panel', root);
+    if (box && box.isConnected) renderAccountPanel(box);
+  });
 
   const sndSeg = $('#snd-seg', root);
   const paintSnd = () => $$('.seg-btn', sndSeg).forEach(b =>
